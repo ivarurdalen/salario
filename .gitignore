@@ -1,0 +1,16 @@
+# Data
+data/
+
+# Python
+.venv
+uv.lock
+__pycache__
+.ruff_cache/
+
+# AI
+.mcp.json
+.claude
+
+.notes/
+
+config.yaml
