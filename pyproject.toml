@@ -8,14 +8,46 @@ dependencies = [
     "plotly>=5.18",
     "pandas>=2.0",
     "numpy>=1.26",
-    "pyyaml>=6.0",
 ]
 
 [build-system]
-requires = ["uv_build>=0.10.7,<0.11.0"]
+requires = ["uv_build>=0.11.0,<0.12.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "ruff>=0.15.4",
+    "ruff",
+    "ty",
+    "pytest",
+    "pytest-cov",
+    "coverage"
 ]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "ANN",    # flake8-annotations (we use ty for type checking)
+  "COM812", # missing-trailing-comma
+  "E501",   # line too long
+  "FBT002", # positional boolean default argument
+  "FIX002", # considering resolving TODO
+  "TD003",  # missing TODO link
+  "D100",   # missing docstring in public module
+  "D104",   # missing docstring in public package
+  "D105",   # undocumented magic method
+  "D107",   # missing docstring in __init__
+  "C408",   # unnecessary dict() call
+  "S310",   # audit URL open — our URLs are hardcoded constants
+  "T201",   # print — used for download progress in CLI context
+]
+exclude = ["__init__.py"]
+fixable = ["ALL"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pylint]
+max-args = 10

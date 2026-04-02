@@ -1,30 +1,24 @@
 """Salary Analysis — kode24 2025."""
 
-import sys
+import json
+import tomllib
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 import panel as pn
 import plotly.graph_objects as go
-import yaml
 
-# Ensure project root and src/ are on sys.path when served with `panel serve`.
-_root = Path(__file__).resolve().parent.parent.parent
-_src = Path(__file__).resolve().parent.parent
-for _p in (str(_root), str(_src)):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
-
-from salario.config import (  # noqa: E402
+from salario.config import (
     TABULATOR_FORMATTERS,
     TABULATOR_HEADER_FILTERS,
     TABULATOR_TITLES,
 )
-from salario.data import ensure_data  # noqa: E402
+from salario.data import ensure_data
 
-CONFIG_PATH = _root / "config.yaml"
-HELP_PATH = _root / "help.md"
+_PKG = Path(__file__).resolve().parent
+CONFIG_PATH = Path.cwd() / "config.toml"
+HELP_PATH = _PKG / "help.md"
 
 pn.extension("tabulator", "plotly", template="fast")
 
@@ -49,18 +43,10 @@ _TABLE_COLS = [
 _GRID = dict(showgrid=True, gridcolor="rgba(0,0,0,0.10)", gridwidth=1)
 
 
-# ---------------------------------------------------------------------------
-# Data / config loading
-# ---------------------------------------------------------------------------
-
-
 @pn.cache
 def _load_data() -> pd.DataFrame:
     data_path = ensure_data()
-    import json
-
-    with open(data_path) as f:
-        records = json.load(f)
+    records = json.loads(data_path.read_text())
     df = pd.DataFrame(records)
     df = df[
         (df["lønn"] >= _LONN_MIN)
@@ -73,8 +59,8 @@ def _load_data() -> pd.DataFrame:
 
 def _load_profile() -> dict[str, Any]:
     if CONFIG_PATH.exists():
-        with open(CONFIG_PATH) as f:
-            return yaml.safe_load(f) or {}
+        with CONFIG_PATH.open("rb") as f:
+            return tomllib.load(f)
     return {}
 
 
@@ -84,11 +70,6 @@ def _load_help() -> str:
     return "_help.md not found._"
 
 
-# ---------------------------------------------------------------------------
-# Filtering
-# ---------------------------------------------------------------------------
-
-
 def _apply_filters(
     df: pd.DataFrame,
     location: str,
@@ -96,19 +77,14 @@ def _apply_filters(
     utd_range: tuple[int, int],
     exp_range: tuple[int, int],
 ) -> pd.DataFrame:
-    mask = df["års utdanning"].between(utd_range[0], utd_range[1]) & df[
-        "års erfaring"
-    ].between(exp_range[0], exp_range[1])
+    mask = df["års utdanning"].between(utd_range[0], utd_range[1]) & df["års erfaring"].between(
+        exp_range[0], exp_range[1]
+    )
     if location != _ALL:
         mask &= df["arbeidssted"] == location
     if job_type != _ALL:
         mask &= df["jobbtype"] == job_type
     return df[mask].sort_values("lønn", ascending=False).reset_index(drop=True)
-
-
-# ---------------------------------------------------------------------------
-# Plots
-# ---------------------------------------------------------------------------
 
 
 def _histogram(df: pd.DataFrame, my_salary: int) -> go.Figure:
@@ -141,7 +117,6 @@ def _histogram(df: pd.DataFrame, my_salary: int) -> go.Figure:
     )
 
     fig.update_layout(
-        title="Salary Distribution",
         xaxis_title="Salary (NOK)",
         yaxis_title="Count",
         template="simple_white",
@@ -157,14 +132,12 @@ def _histogram(df: pd.DataFrame, my_salary: int) -> go.Figure:
 def _box_chart(
     df: pd.DataFrame,
     group_col: str,
-    title: str,
     height_per_row: int,
     my_salary: int = 0,
 ) -> go.Figure:
     if df.empty:
         return go.Figure(
             layout=go.Layout(
-                title=title,
                 template="simple_white",
                 height=320,
                 annotations=[
@@ -242,7 +215,6 @@ def _box_chart(
         )
 
     fig.update_layout(
-        title=title,
         xaxis_title="Salary (NOK)",
         template="simple_white",
         height=max(320, len(stats) * height_per_row + 120),
@@ -255,11 +227,11 @@ def _box_chart(
 
 
 def _fag_chart(df: pd.DataFrame, my_salary: int = 0) -> go.Figure:
-    return _box_chart(df, "fag", "Salary by Field (filtered)", 34, my_salary)
+    return _box_chart(df, "fag", 34, my_salary)
 
 
 def _jobbtype_chart(df: pd.DataFrame, my_salary: int = 0) -> go.Figure:
-    return _box_chart(df, "jobbtype", "Salary by Job Type (filtered)", 60, my_salary)
+    return _box_chart(df, "jobbtype", 60, my_salary)
 
 
 def _scatter(df: pd.DataFrame, my_salary: int = 0, my_exp: int = 0) -> go.Figure:
@@ -310,7 +282,6 @@ def _scatter(df: pd.DataFrame, my_salary: int = 0, my_exp: int = 0) -> go.Figure
         )
 
     fig.update_layout(
-        title="Experience vs. Salary",
         xaxis_title="Experience (yrs)",
         yaxis_title="Salary (NOK)",
         template="simple_white",
@@ -328,11 +299,6 @@ def _scatter(df: pd.DataFrame, my_salary: int = 0, my_exp: int = 0) -> go.Figure
     return fig
 
 
-# ---------------------------------------------------------------------------
-# App
-# ---------------------------------------------------------------------------
-
-
 class SalarioApp(pn.viewable.Viewer):
     """Panel app for analysing kode24 2025 salary data."""
 
@@ -342,8 +308,8 @@ class SalarioApp(pn.viewable.Viewer):
         self._df = df
         profile = _load_profile()
 
-        location_opts = [_ALL] + sorted(df["arbeidssted"].dropna().unique().tolist())
-        job_type_opts = [_ALL] + sorted(df["jobbtype"].dropna().unique().tolist())
+        location_opts = [_ALL, *sorted(df["arbeidssted"].dropna().unique().tolist())]
+        job_type_opts = [_ALL, *sorted(df["jobbtype"].dropna().unique().tolist())]
         locations = sorted(df["arbeidssted"].dropna().unique().tolist())
         job_types = sorted(df["jobbtype"].dropna().unique().tolist())
 
@@ -374,7 +340,7 @@ class SalarioApp(pn.viewable.Viewer):
             width=270,
         )
 
-        # --- My profile widgets — seeded from config.yaml ---
+        # --- My profile widgets — seeded from config.toml ---
         def _pick(opts: list, key: str, fallback: str) -> str:
             v = profile.get(key, fallback)
             return v if v in opts else (opts[0] if opts else fallback)
@@ -462,8 +428,6 @@ class SalarioApp(pn.viewable.Viewer):
         for w in (self.my_salary, self.my_exp):
             w.param.watch(self._on_profile_change, "value")
 
-    # ------------------------------------------------------------------
-
     def _filtered(self) -> pd.DataFrame:
         return _apply_filters(
             self._df,
@@ -473,27 +437,21 @@ class SalarioApp(pn.viewable.Viewer):
             self.exp_slider.value,
         )
 
-    def _on_filter_change(self, event: Any = None) -> None:
+    def _on_filter_change(self, event: Any = None) -> None:  # noqa: ARG002
         filtered = self._filtered()
         self.count_md.object = f"**{len(filtered)} entries**"
         self.table.value = filtered
         self.hist_pane.object = _histogram(filtered, self.my_salary.value)
         self.fag_pane.object = _fag_chart(filtered, self.my_salary.value)
         self.jobbtype_pane.object = _jobbtype_chart(filtered, self.my_salary.value)
-        self.scatter_pane.object = _scatter(
-            filtered, self.my_salary.value, self.my_exp.value
-        )
+        self.scatter_pane.object = _scatter(filtered, self.my_salary.value, self.my_exp.value)
 
-    def _on_profile_change(self, event: Any = None) -> None:
+    def _on_profile_change(self, event: Any = None) -> None:  # noqa: ARG002
         filtered = self._filtered()
         self.hist_pane.object = _histogram(filtered, self.my_salary.value)
         self.fag_pane.object = _fag_chart(filtered, self.my_salary.value)
         self.jobbtype_pane.object = _jobbtype_chart(filtered, self.my_salary.value)
-        self.scatter_pane.object = _scatter(
-            filtered, self.my_salary.value, self.my_exp.value
-        )
-
-    # ------------------------------------------------------------------
+        self.scatter_pane.object = _scatter(filtered, self.my_salary.value, self.my_exp.value)
 
     def __panel__(self) -> pn.viewable.Viewable:
         filter_box = pn.WidgetBox(
@@ -517,19 +475,57 @@ class SalarioApp(pn.viewable.Viewer):
 
         sidebar = pn.Column(filter_box, my_box, width=320)
 
+        hist_card = pn.Card(
+            self.hist_pane,
+            title="Salary Distribution",
+            collapsible=True,
+            collapsed=False,
+            max_width=_PLOT_MAX_WIDTH,
+            align="center",
+        )
+
+        fag_card = pn.Card(
+            self.fag_pane,
+            title="Salary by Field",
+            collapsible=True,
+            collapsed=False,
+            max_width=_PLOT_MAX_WIDTH,
+            align="center",
+        )
+
+        jobbtype_card = pn.Card(
+            self.jobbtype_pane,
+            title="Salary by Job Type",
+            collapsible=True,
+            collapsed=False,
+            max_width=_PLOT_MAX_WIDTH,
+            align="center",
+        )
+
+        scatter_card = pn.Card(
+            self.scatter_pane,
+            title="Experience vs. Salary",
+            collapsible=True,
+            collapsed=False,
+            max_width=_PLOT_MAX_WIDTH,
+            align="center",
+        )
+
         charts_tab = pn.Column(
             self.count_md,
-            self.hist_pane,
-            self.fag_pane,
-            self.jobbtype_pane,
-            self.scatter_pane,
+            hist_card,
+            fag_card,
+            jobbtype_card,
+            scatter_card,
             sizing_mode="stretch_width",
+            align="center",
         )
 
         table_tab = pn.Column(
             self.count_md,
             self.table,
             sizing_mode="stretch_width",
+            css_classes=["salario-panel"],
         )
 
         help_tab = pn.pane.Markdown(
