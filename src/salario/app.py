@@ -77,9 +77,9 @@ def _apply_filters(
     utd_range: tuple[int, int],
     exp_range: tuple[int, int],
 ) -> pd.DataFrame:
-    mask = df["års utdanning"].between(utd_range[0], utd_range[1]) & df["års erfaring"].between(
-        exp_range[0], exp_range[1]
-    )
+    mask = df["års utdanning"].between(int(utd_range[0]), int(utd_range[1])) & df[
+        "års erfaring"
+    ].between(int(exp_range[0]), int(exp_range[1]))
     if location != _ALL:
         mask &= df["arbeidssted"] == location
     if job_type != _ALL:
@@ -475,41 +475,17 @@ class SalarioApp(pn.viewable.Viewer):
 
         sidebar = pn.Column(filter_box, my_box, width=320)
 
-        hist_card = pn.Card(
-            self.hist_pane,
-            title="Salary Distribution",
+        _card_kw = dict(
             collapsible=True,
             collapsed=False,
             max_width=_PLOT_MAX_WIDTH,
             align="center",
+            margin=(10, 0),
         )
-
-        fag_card = pn.Card(
-            self.fag_pane,
-            title="Salary by Field",
-            collapsible=True,
-            collapsed=False,
-            max_width=_PLOT_MAX_WIDTH,
-            align="center",
-        )
-
-        jobbtype_card = pn.Card(
-            self.jobbtype_pane,
-            title="Salary by Job Type",
-            collapsible=True,
-            collapsed=False,
-            max_width=_PLOT_MAX_WIDTH,
-            align="center",
-        )
-
-        scatter_card = pn.Card(
-            self.scatter_pane,
-            title="Experience vs. Salary",
-            collapsible=True,
-            collapsed=False,
-            max_width=_PLOT_MAX_WIDTH,
-            align="center",
-        )
+        hist_card = pn.Card(self.hist_pane, title="Salary Distribution", **_card_kw)
+        fag_card = pn.Card(self.fag_pane, title="Salary by Field", **_card_kw)
+        jobbtype_card = pn.Card(self.jobbtype_pane, title="Salary by Job Type", **_card_kw)
+        scatter_card = pn.Card(self.scatter_pane, title="Experience vs. Salary", **_card_kw)
 
         charts_tab = pn.Column(
             self.count_md,
