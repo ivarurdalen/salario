@@ -10,8 +10,10 @@ set -- python -m panel serve src/salario/app.py \
   --port "${PORT}" \
   --session-history 0
 
+set -f # disable glob expansion (ALLOW_WS_ORIGIN may contain *)
 for origin in ${ALLOW_WS_ORIGIN}; do
   set -- "$@" --allow-websocket-origin "${origin}"
 done
+set +f
 
 exec "$@"
