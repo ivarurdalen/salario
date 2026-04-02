@@ -1,0 +1,10 @@
+config:
+  line-length: false
+  blanks-around-fences: false
+  first-line-heading: false
+  no-bare-urls: false
+  no-duplicate-heading:
+    siblings_only: true
+  ol-prefix: false
+  table-column-style:
+    style: aligned

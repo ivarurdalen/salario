@@ -3,8 +3,10 @@
 import urllib.request
 from pathlib import Path
 
+from salario.util import ROOT
+
 _DATA_URL = "https://www.kode24.no/files/2025/09/01/kode24s%20l%C3%B8nnstall%202025.json"
-_DATA_PATH = Path.cwd() / "data" / "kode24_2025.json"
+_DATA_PATH = ROOT / "data" / "kode24_2025.json"
 _USER_AGENT = "Mozilla/5.0 (compatible; salario/0.1; +https://github.com/ivarurdalen/salario)"
 
 

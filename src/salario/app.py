@@ -15,9 +15,10 @@ from salario.config import (
     TABULATOR_TITLES,
 )
 from salario.data import ensure_data
+from salario.util import ROOT
 
 _PKG = Path(__file__).resolve().parent
-CONFIG_PATH = Path.cwd() / "config.toml"
+CONFIG_PATH = ROOT / "config.toml"
 HELP_PATH = _PKG / "help.md"
 
 pn.extension("tabulator", "plotly", template="fast")
@@ -501,7 +502,6 @@ class SalarioApp(pn.viewable.Viewer):
             self.count_md,
             self.table,
             sizing_mode="stretch_width",
-            css_classes=["salario-panel"],
         )
 
         help_tab = pn.pane.Markdown(

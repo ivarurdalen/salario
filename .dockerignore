@@ -7,6 +7,6 @@
 .mcp.json
 __pycache__/
 *.pyc
-config.yaml
+config.toml
 data/
 scripts/
