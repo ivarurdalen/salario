@@ -6,6 +6,7 @@ data/
 uv.lock
 __pycache__
 .ruff_cache/
+.mypy_cache/
 
 # AI
 .mcp.json
@@ -13,4 +14,5 @@ __pycache__
 
 .notes/
 
-config.yaml
+.env
+.env.example
