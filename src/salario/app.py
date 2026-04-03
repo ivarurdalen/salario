@@ -23,6 +23,8 @@ HELP_PATH = _PKG / "help.md"
 
 pn.extension("tabulator", "plotly", template="fast")
 
+ACCENT = "#009485"
+
 _LONN_MIN = 100_000
 _LONN_MAX = 5_000_000
 _UTD_MAX = 20  # cap obviously erroneous values (max in data is 45781)
@@ -100,7 +102,7 @@ def _histogram(df: pd.DataFrame, my_salary: int) -> go.Figure:
             go.Histogram(
                 x=df["lønn"],
                 xbins=dict(size=bin_size),
-                marker_color="steelblue",
+                marker_color=ACCENT,
                 opacity=0.8,
                 name="Salary",
                 hovertemplate="Salary: %{x:,.0f} NOK<br>Count: %{y}<extra></extra>",
@@ -182,9 +184,9 @@ def _box_chart(
             upperfence=stats["max_val"].values,
             orientation="h",
             boxpoints=False,
-            fillcolor="rgba(70,130,180,0.55)",
-            line=dict(color="navy", width=1.5),
-            marker=dict(color="navy"),
+            fillcolor="rgba(0,148,133,0.45)",
+            line=dict(color="#00695C", width=1.5),
+            marker=dict(color="#00695C"),
             name="",
             showlegend=False,
         )
@@ -198,7 +200,7 @@ def _box_chart(
             mode="text",
             text=[f" {v / 1_000:.0f}k" for v in stats["median"]],
             textposition="middle right",
-            textfont=dict(size=10, color="navy"),
+            textfont=dict(size=10, color="#00695C"),
             showlegend=False,
             hoverinfo="skip",
         )
@@ -240,7 +242,7 @@ def _scatter(df: pd.DataFrame, my_salary: int = 0, my_exp: int = 0) -> go.Figure
 
     if not df.empty:
         job_types = sorted(df["jobbtype"].dropna().unique())
-        colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+        colors = ["#009485", "#E65100", "#7B1FA2", "#C62828"]
         color_map = {jt: colors[i % len(colors)] for i, jt in enumerate(job_types)}
 
         for jt in job_types:
@@ -521,4 +523,8 @@ class SalarioApp(pn.viewable.Viewer):
 
 
 if pn.state.served:
+    pn.state.template.param.update(
+        accent_base_color=ACCENT,
+        header_background="#00695C",
+    )
     SalarioApp().servable(title="Salary Analysis — kode24 2025")
