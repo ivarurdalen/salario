@@ -1,0 +1,30 @@
+# Salario - Salary Calculation Tool
+# Deployed via Dokploy on svintruberget
+#
+# Set PUBLIC_HOSTNAME in Dokploy Environment tab:
+#   PUBLIC_HOSTNAME=salario.svintruberget.com
+
+services:
+  salario:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "5006"
+    environment:
+      - PANEL_PORT=5006
+      - PANEL_ADDRESS=0.0.0.0
+      - PANEL_ALLOW_WS_ORIGIN=${PUBLIC_HOSTNAME} localhost:5006 127.0.0.1:5006
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.salario.rule=Host(`${PUBLIC_HOSTNAME}`)"
+      - "traefik.http.routers.salario.entrypoints=websecure"
+      - "traefik.http.routers.salario.tls.certResolver=letsencrypt"
+      - "traefik.http.services.salario.loadbalancer.server.port=5006"
+
+networks:
+  dokploy-network:
+    external: true
