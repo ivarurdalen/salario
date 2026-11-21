@@ -1,0 +1,25 @@
+# Build the app image on the svintruberget builder and push it to Harbor as :<commit sha>
+# and :main, where Trivy scans it.
+when:
+  - event: [push, manual]
+    branch: main
+
+labels:
+  builder: worker
+
+steps:
+  - name: image
+    image: docker:29-cli
+    environment:
+      HARBOR_USERNAME:
+        from_secret: harbor_username
+      HARBOR_PASSWORD:
+        from_secret: harbor_password
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+      - echo "$${HARBOR_PASSWORD}" | docker login caixa.tail4e8272.ts.net:5443 -u "$${HARBOR_USERNAME}" --password-stdin
+      - docker build -t caixa.tail4e8272.ts.net:5443/svintruberget/salario:${CI_COMMIT_SHA} .
+      - docker push caixa.tail4e8272.ts.net:5443/svintruberget/salario:${CI_COMMIT_SHA}
+      - docker tag caixa.tail4e8272.ts.net:5443/svintruberget/salario:${CI_COMMIT_SHA} caixa.tail4e8272.ts.net:5443/svintruberget/salario:main
+      - docker push caixa.tail4e8272.ts.net:5443/svintruberget/salario:main
